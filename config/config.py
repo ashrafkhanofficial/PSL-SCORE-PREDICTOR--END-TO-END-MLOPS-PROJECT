@@ -15,14 +15,9 @@ NOTEBOOKS_DIR = PROJECT_DIR / 'notebooks'
 REPORTS_DIR = PROJECT_DIR / 'reports'
 FIGURES_DIR = REPORTS_DIR / 'figures'
 
-# Data settings
-TEST_SIZE = 0.2
-RANDOM_STATE = 42
-
-# Model settings
-N_ESTIMATORS = 100
-MAX_DEPTH = None
 
 # Logging settings
-LOG_FILE = PROJECT_DIR / 'logs' / 'app.log'
-LOG_LEVEL = 'INFO'
+LOG_DIR = PROJECT_DIR / 'logs'
+LOG_FILE = PROJECT_DIR / LOG_DIR / 'app.log'
+MAX_LOG_SIZE = 5 * 1024 * 1024  # 5 MB
+BACKUP_COUNT = 3
