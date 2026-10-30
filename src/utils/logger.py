@@ -1,10 +1,7 @@
 import logging
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-import sys
-sys.path.insert(0, str(Path('.').resolve().parent))
 from config.config import LOG_FILE, LOG_DIR, MAX_LOG_SIZE, BACKUP_COUNT
-
 
 # Config
 # LOG_DIR = "logs"
@@ -20,9 +17,9 @@ def get_logger(name: str) -> logging.Logger:
 
     # Ensure log directory exists
     log_dir = Path(LOG_DIR)
-    log_dir.mkdir(exist_ok=True)
+    log_dir.mkdir(parents=True, exist_ok=True)
 
-    log_file_path = log_dir / LOG_FILE
+    log_file_path = Path(LOG_FILE)
 
     # Create/get logger
     logger = logging.getLogger(name)
@@ -33,15 +30,11 @@ def get_logger(name: str) -> logging.Logger:
         return logger
 
     # Formatter
-    formatter = logging.Formatter(
-        "[%(asctime)s] %(name)s - %(levelname)s - %(message)s"
-    )
+    formatter = logging.Formatter("[%(asctime)s] %(name)s - %(levelname)s - %(message)s")
 
     # File handler (rotating)
     file_handler = RotatingFileHandler(
-        log_file_path,
-        maxBytes=MAX_LOG_SIZE,
-        backupCount=BACKUP_COUNT
+        log_file_path, maxBytes=MAX_LOG_SIZE, backupCount=BACKUP_COUNT
     )
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(formatter)

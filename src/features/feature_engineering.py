@@ -1,83 +1,92 @@
 """
-Module for feature engineering and transformation.
+Module for feature engineering and transformation on PSL match data.
 """
+
+import sys
+from typing import Tuple
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import StandardScaler, LabelEncoder
+
+from src.exception import MyException
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
+
+ELIGIBLE_TEAMS = [
+    "Peshawar Zalmi",
+    "Islamabad United",
+    "Lahore Qalandars",
+    "Karachi Kings",
+    "Quetta Gladiators",
+    "Multan Sultans",
+]
+
+CATEGORICAL_FEATURES = ["venue", "batting_team", "bowling_team"]
+NUMERICAL_FEATURES = ["balls_remaining", "current_score", "wickets_remaining", "crr"]
 
 
-def create_features(df: pd.DataFrame) -> pd.DataFrame:
+def clean_venue_names(series: pd.Series) -> pd.Series:
     """
-    Create new features from existing columns.
-    
+    Standardize venue names by extracting the city (first word).
+    """
+    return series.astype(str).str.split(" ").str[0]
+
+
+def extract_features_and_target(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
+    """
+    Transform raw ball-by-ball DataFrame into model features X and target y.
+
     Args:
-        df: Input DataFrame
-        
+        df: Input raw PSL DataFrame
+
     Returns:
-        DataFrame with new features
+        Tuple of (X, y)
     """
-    df_features = df.copy()
-    
-    # Add your feature engineering logic here
-    # Example: df_features['new_feature'] = df_features['col1'] * df_features['col2']
-    
-    return df_features
+    logger.info("Starting feature engineering pipeline...")
+    try:
+        data = df.copy()
 
+        # Step 1: Filter to 1st innings only
+        data = data[data["inning"] == 1].copy()
+        logger.info(f"Filtered 1st innings records: {len(data)} rows")
 
-def handle_missing_values(df: pd.DataFrame, strategy: str = 'mean') -> pd.DataFrame:
-    """
-    Handle missing values in the dataset.
-    
-    Args:
-        df: Input DataFrame
-        strategy: Strategy for handling missing values ('mean', 'median', 'drop')
-        
-    Returns:
-        DataFrame with missing values handled
-    """
-    df_filled = df.copy()
-    
-    if strategy == 'drop':
-        df_filled = df_filled.dropna()
-    elif strategy in ['mean', 'median']:
-        df_filled = df_filled.fillna(df_filled.agg(strategy))
-    
-    return df_filled
+        # Step 2: Keep only matches between the 6 eligible PSL franchises
+        data = data[
+            data["batting_team"].isin(ELIGIBLE_TEAMS) & data["bowling_team"].isin(ELIGIBLE_TEAMS)
+        ].copy()
 
+        # Step 3: Compute cumulative match runs and wickets
+        data["current_score"] = data.groupby(["match_id", "inning"])["total_runs"].cumsum()
+        data["total_out"] = data.groupby(["match_id", "inning"])["is_wicket"].cumsum()
 
-def encode_categorical_features(df: pd.DataFrame, categorical_cols: list) -> pd.DataFrame:
-    """
-    Encode categorical features.
-    
-    Args:
-        df: Input DataFrame
-        categorical_cols: List of categorical column names
-        
-    Returns:
-        DataFrame with encoded categorical features
-    """
-    df_encoded = df.copy()
-    
-    for col in categorical_cols:
-        encoder = LabelEncoder()
-        df_encoded[col] = encoder.fit_transform(df_encoded[col].astype(str))
-    
-    return df_encoded
+        # Step 4: Compute balls remaining (T20 = 120 balls total)
+        data["balls_remaining"] = 120 - ((data["over"] - 1) * 6 + data["ball"])
+        data["balls_remaining"] = data["balls_remaining"].clip(lower=0, upper=120)
 
+        # Step 5: Compute wickets remaining (max 10 wickets)
+        data["wickets_remaining"] = (10 - data["total_out"]).clip(lower=0, upper=10)
 
-def scale_features(df: pd.DataFrame, numeric_cols: list) -> pd.DataFrame:
-    """
-    Scale numeric features.
-    
-    Args:
-        df: Input DataFrame
-        numeric_cols: List of numeric column names
-        
-    Returns:
-        DataFrame with scaled features
-    """
-    df_scaled = df.copy()
-    scaler = StandardScaler()
-    df_scaled[numeric_cols] = scaler.fit_transform(df_scaled[numeric_cols])
-    
-    return df_scaled
+        # Step 6: Compute Current Run Rate (CRR)
+        balls_bowled = 120 - data["balls_remaining"]
+        data["crr"] = np.where(balls_bowled > 0, (data["current_score"] / balls_bowled) * 6, 0.0)
+
+        # Step 7: Compute target (maximum runs achieved in the 1st innings)
+        target_map = data.groupby("match_id")["current_score"].max()
+        data["target"] = data["match_id"].map(target_map)
+
+        # Step 8: Standardize venue names
+        data["venue"] = clean_venue_names(data["venue"])
+
+        # Filter out corrupted rows where balls_bowled == 0 or target is missing
+        data = data.dropna(subset=["target"])
+        data = data[data["balls_remaining"] < 120]
+
+        X = data[CATEGORICAL_FEATURES + NUMERICAL_FEATURES].copy()
+        y = data["target"].astype(float).copy()
+
+        logger.info(f"Feature engineering completed. X shape: {X.shape}, y shape: {y.shape}")
+        return X, y
+
+    except Exception as e:
+        logger.error("Error occurred during feature engineering")
+        raise MyException(e, sys) from e

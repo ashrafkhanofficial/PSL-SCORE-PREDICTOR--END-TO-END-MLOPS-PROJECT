@@ -1,6 +1,6 @@
 # PSL Score Predictor - End-to-End MLOps Project
 
-A complete machine learning project structure for building, training, and deploying a PSL (Premier Soccer League) score prediction model.
+A complete machine learning project structure for building, training, and deploying a PSL (Pakistan Super League) score prediction model.
 
 ## Project Structure
 
@@ -74,7 +74,7 @@ make format
 ## Key Modules
 
 ### `src/data/`
-- **load_data.py**: Data loading and saving functions
+- **data_ingestion.py**: Data loading, validation, and ingestion functions
 
 ### `src/features/`
 - **feature_engineering.py**: Feature creation and preprocessing

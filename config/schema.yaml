@@ -1,0 +1,67 @@
+columns:
+  id: int64
+  match_id: int64
+  date: object
+  season: int64
+  venue: object
+  inning: int64
+  batting_team: object
+  bowling_team: object
+  over: int64
+  ball: int64
+  batter: object
+  bowler: object
+  non_striker: object
+  batsman_runs: int64
+  extra_runs: int64
+  total_runs: int64
+  extras_type: object
+  is_wicket: bool
+  player_dismissed: object
+  dismissal_kind: object
+  fielder: object
+  winner: object
+  win_by: object
+  match_type: object
+  player_of_match: object
+  umpire_1: object
+  umpire_2: object
+
+categorical_columns:
+  - venue
+  - batting_team
+  - bowling_team
+
+numerical_columns:
+  - balls_remaining
+  - current_score
+  - wickets_remaining
+  - crr
+
+target_column:
+  - target
+
+drop_columns:
+  - id
+  - match_id
+  - date
+  - season
+  - over
+  - ball
+  - batter
+  - bowler
+  - non_striker
+  - batsman_runs
+  - extra_runs
+  - total_runs
+  - extras_type
+  - is_wicket
+  - player_dismissed
+  - dismissal_kind
+  - fielder
+  - winner
+  - win_by
+  - match_type
+  - player_of_match
+  - umpire_1
+  - umpire_2

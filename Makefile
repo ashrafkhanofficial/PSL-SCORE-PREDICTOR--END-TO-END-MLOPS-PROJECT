@@ -38,10 +38,10 @@ clean:
 	rm -rf .pytest_cache
 
 data:
-	@echo "Data generation not yet implemented"
+	python -m src.data.data_ingestion
 
 train:
-	@echo "Model training script not yet implemented"
+	python main.py
 
 predict:
 	@echo "Prediction script not yet implemented"

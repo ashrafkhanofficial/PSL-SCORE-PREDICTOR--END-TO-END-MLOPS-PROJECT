@@ -55,6 +55,7 @@ dev = [
     "black>=22.0.0",
     "flake8>=4.0.0",
     "mypy>=0.950",
+    "types-PyYAML",
 ]
 
 [project.urls]
@@ -75,3 +76,11 @@ line_length = 100
 python_version = "3.8"
 warn_return_any = true
 warn_unused_configs = true
+
+[tool.pyrefly]
+python-interpreter-path = ".venv/python.exe"
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+
